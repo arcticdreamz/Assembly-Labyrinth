@@ -1,6 +1,6 @@
 .include beta.uasm
 
-|; constqnts
+|; constants
 nb_rows = 8
 nb_cols = 32
 NB_CELLS = 256
@@ -16,21 +16,6 @@ cells_per_word = 4
 	MOVE(Rb,Rc)
 }
 
-.macro ROW_FROM_INDEX(Ra,Rb){
-	DIV(Ra,Rb,R7)
-}
-
-.macro COL_FROM_INDEX(Ra,Rb){
-	MOD(Ra,Rb,R7)
-}
-.macro ROW_OFFSET(index,cols){ROW_FROM_INDEX(index,cols) words_per_row}
-.macro SOURCE_COL(source){COL_FROM_INDEX(source,NB_COLS)}
-.macro WORD_OFFSET(){ROW_OFFSET() + WORD_OFFSET_IN_LINE()}
-.macro BYTE_OFFSET(Ra){CMOVE(COL_FROM_INDEX(SOURCE_COL(),cells_per_word),Ra)}
-
-
-
-
 
 |;maze --> R1
 |;nb_rows --> R2
@@ -38,24 +23,11 @@ cells_per_word = 4
 |;visited --> R4
 |;curr_cell --> R6
 
-PerfectMazeAux(M; R; C; V; c)
-1 V[c] = 1 |; on mets un 1 dans un registre, on shift jusque la ou il faut et on fait OR pour updater
-2 N = "create array with cc neighbours indexes" |; allocate ou STORAGE peut etre ?
-3 N = RandomShuffle(N)
-4 for n € N
-5 if V[n] == 0
-6 Connect(M; c; n)
-7 M = PerfectMazeAux(M; V; R; C; n)
-8 return M
-
-
-
-
 
 perfect_maze:
 
 
-connect:
+connect__:
 	|; We'll use R7 as a temporary registers for most things
 	|;*****************************SWAP*************************************
 	CMOVE(source,R9)
