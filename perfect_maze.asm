@@ -11,7 +11,7 @@ nb_maze_words = 512
 cells_per_word = 4
 
 .macro SWAP(Ra,Rb,Rc){
-	MOVE(Ra,Rc)
+	MOVE(Rc,Ra)
 	MOVE(Ra,Rb)
 	MOVE(Rb,Rc)
 }
