@@ -103,8 +103,10 @@ void connect(int* maze, int source, int dest, int nb_cols) {
  */
 void perfect_maze(int* maze, int nb_rows, int nb_cols, int* visited, int curr_cell) {
 	// set current cell as visited 
+	// On se place dans une des 7 colonnes de la bitmap
+	// On shift le 1 de (curr_cell % 32)
 	visited[curr_cell / 32] |= (1 << (curr_cell % 32));
-
+curr
 	// valid neighbours static array and array size
 	int neighbours[4] = {0}, n_valid_neighbours = 0; 
 
@@ -139,8 +141,10 @@ void perfect_maze(int* maze, int nb_rows, int nb_cols, int* visited, int curr_ce
 		swap(neighbours + n_valid_neighbours - 1, neighbours + random_neigh_index);
 		n_valid_neighbours--;
 
+		// Shift bitmap vers la droite de (neighbour % 32) et si déjà visité --> 1
 		int visited_bit = (visited[neighbour / 32] >> (neighbour % 32)) & 1; 
 		if (visited_bit == 1) {
+			// Il continue le while
 			continue;
 		}
 
