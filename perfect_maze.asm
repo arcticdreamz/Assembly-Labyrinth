@@ -1,5 +1,6 @@
 .include beta.uasm
-
+.include main.asm
+ |; ***************************************************************
 |; constants
 nb_rows = 8
 nb_cols = 32
@@ -22,60 +23,90 @@ cells_per_word = 4
 
 |;Return the column of the cell at given index.
 .macro COL_FROM_INDEX(Ra,Rb,Rc) MOD(Ra,Rb,Rc)
+|; ***************************************************************
 
-PUSH(LP)
-PUSH(BP)
-MOVE(SP,BP)
-ALLOCATE()
-LD(BP,-12,R1) |;maze --> R1
-LD(BP,-16,R2) |;nb_rows --> R2
-LD(BP,-20,R3) |;nb_cols --> R3
-LD(BP,-24,R4) |;visited --> R4
-LD(BP,-28,R6) |;curr_cell --> R6
 
 
 perfect_maze:
-CMOVE(1,R7)
+	PUSH(LP)
+	PUSH(BP)
+	MOVE(SP,BP)
+	ALLOCATE() |; je ne sais pas combien allouer
+	LD(BP,-12,R1) |;maze --> R1
+	LD(BP,-16,R2) |;nb_rows --> R2
+	LD(BP,-20,R3) |;nb_cols --> R3
+	LD(BP,-24,R4) |;visited --> R4
+	LD(BP,-28,R6) |;curr_cell --> R6
 
-MOD(R6,32,R8) |; curr_cell in R6,  (curr_cell % 32) 
-SHL(R7,R8,R7) |; shift 1 (R7) left by R8 bits
-OR(R4,R7,R4) |; update visited(R4)
-|;******** FAUT AJOUTER LES NEIGHBOURS 
+
+	CMOVE(1,R7)
+	MOD(R6,32,R8) |; curr_cell in R6,  (curr_cell % 32) 
+	SHL(R7,R8,R7) |; shift 1 (R7) left by R8 bits
+	OR(R4,R7,R4) |; update visited(R4)
+	|;******** FAUT AJOUTER LES NEIGHBOURS 
 		|;	RANDOM()
 		|;	PUSH(R0)
 		|;	CALL(abs__)
 		|;	DEALLOCATE(1)
 		|;	MUL(R2, R3, R5)
 		|;	MOD(R0, R5, R6)
-COL_FROM_INDEX(R6,R3,R8) |; col in R8
+	COL_FROM_INDEX(R6,R3,R8) |; col in R8
+	CMOVE(0,R9); |; n_valid_neighbours
 
-|;check left neighbour
-CMPLT(R31,R8,R7) |; 0 < col(R8)
-BF(R7,<PC>+4)
-neighbours[n_valid_neighbours++] = curr_cell - 1;
+	|;check left neighbour
+	CMPLT(R31,R8,R7) |; 0 < col(R8)
+	BF(R7,<PC>+8)
+	SUBC(R6,1,R7) |; curr_cell - 1
+	neighbours[n_valid_neighbours++] = curr_cell - 1;
+	ADDC(R9,1,R9) |;n_valid_neighbours++
 
-|;check right neighbour
-SUBC(R3,1,R7) |; nb_cols - 1
-CMPLT(R8,R7,R7) |; col < nb_cols -1 (R7)
-BF(R7, <PC> +4);
-neighbours[n_valid_neighbours++] = curr_cell + 1;
+	|;check right neighbour
+	SUBC(R3,1,R7) |; nb_cols - 1
+	CMPLT(R8,R7,R7) |; col < nb_cols -1 (R7)
+	BF(R7, <PC> +8)
+	ADDC(R6,1,R7) |; curr_cell + 1
+	neighbours[n_valid_neighbours++] = curr_cell + 1;
+	ADDC(R9,1,R9) |;n_valid_neighbours++
 
-ROW_FROM_INDEX(R6,R5,R8) |; row in R8
+	ROW_FROM_INDEX(R6,R5,R8) |; row in R8
 
-|;check top neighbour
-CMPLT(R31,R8,R7) |; 0 < row(R8)
-BF(R7,<PC>+4)
-neighbours[n_valid_neighbours++] = curr_cell - nb_cols;
+	|;check top neighbour
+	CMPLT(R31,R8,R7) |; 0 < row(R8)
+	BF(R7,<PC>+8)
+	SUB(R6,R3,R7) |; curr_cell - nb_cols
+	neighbours[n_valid_neighbours++] = curr_cell - nb_cols;
+	ADDC(R9,1,R9) |;n_valid_neighbours++
 
-|;check bottom neighbour
-SUBC(R2,1,R7) |; nb_rows - 1
-CMPLT(R8,R7,R7) |; row < nb_rows -1 (R7)
-BF(R7, <PC> +4)
-neighbours[n_valid_neighbours++] = curr_cell + nb_cols;
+
+	|;check bottom neighbour
+	SUBC(R2,1,R7) |; nb_rows - 1
+	CMPLT(R8,R7,R7) |; row < nb_rows -1 (R7)
+	BF(R7, <PC> +8)
+	ADD(R6,R3,R7) |; curr_cell + nb_cols
+	neighbours[n_valid_neighbours++] = curr_cell + nb_cols;
+	ADDC(R9,1,R9) |;n_valid_neighbours++
+
+
+
+
+
+
+
+
+
+	|; RECURSIVITE
+	POP(BP)
+	POP(LP)
+	CALL(connect__)
+	CALL(perfect_maze)
+
 
 
 
 connect__:
+	PUSH(LP)
+	PUSH(BP)
+	MOVE(SP,BP)
 	|; We'll use R7 as a temporary registers for most things
 
 	|;*****************************SWAP*************************************
@@ -133,7 +164,7 @@ vert_loop_init__:
 	CMOVE(3,R14) |; initialise the iterator to 3
 vert_loop__:
 	CMPEQC(R14,7, R7)
-	BT(R7,exit__)
+	BT(R7,connect_end__)
 	MULC(R14,words_per_mem_line,R7) |; calculate the index(like an array) of the word to update
 	ADD(R11,R7,R7) |; calculate the index of the word to update
 	|; if the first word is at memory adress 64(cf slides), and the adress is +4 for the next one,
@@ -141,7 +172,7 @@ vert_loop__:
 	MULC(R7,4,R7) |; R7 now contains the *ADRESS* of the word to be changed
 	LD(R7,R15) |; load the word to R15
 	AND(R15,R13,R15) |; apply the mask
-	ST(R15,R7) |; put the updated word back 
+	ST(R15,R7) |; put the updated word back
 	ADDC(R14,1,R14) |; increment iterator
 	BR(vert_loop__)
 
@@ -171,7 +202,7 @@ horitonzal_loop_init__:
 	CMOVE(0,R14) |; initialise the iterator to 0
 horizontal_loop__:
 	CMPEQC(R14,2, R7)
-	BT(R7,exit__)
+	BT(R7,connect_end__)
 	MULC(R14,words_per_mem_line,R7) |; calculate the index(like an array) of the word to update
 	ADD(R11,R7,R7) |; calculate the index of the word to update
 	|; if the first word is at memory adress 64(cf slides), and the adress is +4 for the next one,
@@ -183,6 +214,7 @@ horizontal_loop__:
 	ADDC(R14,1,R14) |; increment iterator
 	BR(horizontal_loop__)
 
-exit__:
-
-|; NTM
+connect_end__:
+POP(BP)
+POP(LP)
+RTN()
