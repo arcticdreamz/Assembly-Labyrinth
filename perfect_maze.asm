@@ -3,7 +3,7 @@
 |; constants
 nb_rows = 8
 nb_cols = 32
-NB_CELLS = 256
+nb_cells = 256
 words_per_mem_line = 8
 mem_lines_per_row = 8
 words_per_row = 64
@@ -35,6 +35,32 @@ LD(BP,-28,R6) |;curr_cell --> R6
 
 
 perfect_maze:
+CMOVE(1,R7)
+
+MOD(R6,32,R8) |; curr_cell in R6,  (curr_cell % 32) 
+SHL(R7,R8,R7) |; shift 1 (R7) left by R8 bits
+OR(R4,R7,R4) |; update visited(R4)
+|;******** FAUT AJOUTER LES NEIGHBOURS 
+		|;	RANDOM()
+		|;	PUSH(R0)
+		|;	CALL(abs__)
+		|;	DEALLOCATE(1)
+		|;	MUL(R2, R3, R5)
+		|;	MOD(R0, R5, R6)
+MUL(R2,R3,R5) |; nb_cells in R5
+
+COL_FROM_INDEX(R6,R5,R8) |; col in R8
+CMPLT(R31,R8,R7) |; 0 < col(R8)
+BF(R7,<PC>+4)
+neighbours[n_valid_neighbours++] = curr_cell - 1;
+
+
+
+ROW_FROM_INDEX(R6,R5,R8) |; row in R8
+CMPLT(R31,R8,R7) |; 0 < row(R8)
+BF(R7,<PC>+4)
+neighbours[n_valid_neighbours++] = curr_cell - nb_cols;
+
 
 
 connect__:

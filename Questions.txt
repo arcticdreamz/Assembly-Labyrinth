@@ -1,0 +1,4 @@
+Questions à poser : 
+- comment accéder à un WORD particulier dans le labyrinthe
+-LD et ST ?
+- Comment aller changer un bit dans un word précis de visited ?
