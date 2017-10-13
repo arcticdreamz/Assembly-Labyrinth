@@ -23,12 +23,15 @@ cells_per_word = 4
 |;Return the column of the cell at given index.
 .macro COL_FROM_INDEX(Ra,Rb,Rc) MOD(Ra,Rb,Rc)
 
-
-|;maze --> R1
-|;nb_rows --> R2
-|;nb_cols --> R3, total number of cells : R5
-|;visited --> R4
-|;curr_cell --> R6
+PUSH(LP)
+PUSH(BP)
+MOVE(SP,BP)
+ALLOCATE()
+LD(BP,-12,R1) |;maze --> R1
+LD(BP,-16,R2) |;nb_rows --> R2
+LD(BP,-20,R3) |;nb_cols --> R3
+LD(BP,-24,R4) |;visited --> R4
+LD(BP,-28,R6) |;curr_cell --> R6
 
 
 perfect_maze:
