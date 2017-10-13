@@ -10,11 +10,18 @@ words_per_row = 64
 nb_maze_words = 512
 cells_per_word = 4
 
-.macro SWAP(Ra,Rb,Rc){
-	MOVE(Rc,Ra)
-	MOVE(Ra,Rb)
-	MOVE(Rb,Rc)
-}
+
+|; Reg[Rc] <- Reg[Ra] mod Reg[Rb] (Rc should be different from Ra and Rb)
+.macro MOD(Ra, Rb, Rc) DIV(Ra, Rb, Rc) MUL(Rc, Rb, Rc) SUB(Ra, Rc, Rc)
+
+|; Swap the values stored at addresses a and b.
+.macro SWAP(Ra,Rb,Rc) MOVE(Rc,Ra) MOVE(Ra,Rb) MOVE(Rb,Rc)
+
+|;Return the row of the cell at given index.
+.macro ROW_FROM_INDEX(Ra,Rb,Rc) DIV(Ra,Rb,Rc)
+
+|;Return the column of the cell at given index.
+.macro COL_FROM_INDEX(Ra,Rb,Rc) MOD(Ra,Rb,Rc)
 
 
 |;maze --> R1
@@ -29,12 +36,14 @@ perfect_maze:
 
 connect__:
 	|; We'll use R7 as a temporary registers for most things
+
 	|;*****************************SWAP*************************************
 	CMOVE(source,R9)
 	CMOVE(dest,R10)
 	CMPLT(R9,R10,R7) |; make sure source is *before* dest in the maze (source < dest)
 	BT(R7,<PC>+4) |; no need to swap, so we jump the swap function
 	SWAP(R10,R9,R7)
+
 	|;**********************************************************************
 				|;int dest_row = row_from_index(dest, nb_cols);
 				|;int row_offset = dest_row * WORDS_PER_ROW;
@@ -46,12 +55,12 @@ connect__:
 
 	|; TODO: R8 is empty, shift all registers so that R8 is filled again
 
-	DIV(R10,R3,R7)|; row_from_index dans R7, R3 contient déjà col (cf main.asm)
+	ROW_FROM_INDEX(R10,R3,R7)|; dest_row dans R7, R3 contient déjà col (cf main.asm)
 	MUL(words_per_row,R7,R11) |; row_offset dans R11
-	MOD(R9,R3,R7) |;source_col dans R7
-	DIV(R7,cells_per_word,R12) |; word_offset_in_line dans R12
+	COL_FROM_INDEX(R9,R3,R7) |;source_col dans R7
+	ROW_FROM_INDEX(R7,cells_per_word,R12) |; word_offset_in_line dans R12
 	ADD(R11,R12,R11) |; word offset dans R11
-	MOD(R7,cells_per_word,R12) |; byte_offset dans R12
+	COL_FROM_INDEX(R7,cells_per_word,R12) |; byte_offset dans R12
 |;******************************************************************************************
 
 |; *****************************Open vertical connection************************************
@@ -61,18 +70,22 @@ vertical__:
 	BT(R7,horizontal__) |; if R7 == 1 -->  horizontal connection
 
 	CMPEQC(R12,0,R7) |; examine the byte offset
+	BF(R7,<PC>+8)
 	CMOVE(0xFFFFFF00,R13) |;OPEN_V_0 , we put the mask in R13
-	BT(R7,vert_loop)
+	BR(vert_loop_init__)
 
 	CMPEQC(R12,1,R7)
+	BF(R7,<PC>+8)
 	CMOVE(0xFFFF00FF,R13) |;OPEN_V_1
-	BT(R7,vert_loop)
+	BR(vert_loop_init__)
 
 	CMPEQC(R12,2,R7)
+	BF(R7,<PC>+8)
 	CMOVE(0xFF00FFFF,R13) |;OPEN_V_2
-	BT(R7,vert_loop)
+	BR(vert_loop_init__)
 
 	CMOVE(0x00FFFFFF,R13) |;OPEN_V_3
+	BR(vert_loop_init__)
 
 
 vert_loop_init__:
@@ -89,27 +102,28 @@ vert_loop__:
 	AND(R15,R13,R15) |; apply the mask
 	ST(R15,R7) |; put the updated word back 
 	ADDC(R14,1,R14) |; increment iterator
-	JMP(vert_loop__)
-
-
-
+	BR(vert_loop__)
 
 
 
 horizontal__:
 	CMPEQC(R12,0,R7) |; examine the byte offset
+	BF(R7,<PC>+8)
 	CMOVE(0xFFFFFFE1,R13) |;OPEN_H_0 , we put the mask in R13
-	BT(R7,horitonzal_loop_init__)
+	BR(horitonzal_loop_init__)
 
 	CMPEQC(R12,1,R7)
+	BF(R7,<PC>+8)
 	CMOVE(0xFFFFE1FF,R13) |;OPEN_V_1
-	BT(R7,horitonzal_loop_init__)
+	BR(horitonzal_loop_init__)
 
 	CMPEQC(R12,2,R7)
+	BF(R7,<PC>+8)
 	CMOVE(0xFFE1FFFF,R13) |;OPEN_V_2
-	BT(R7,horitonzal_loop_init__)
+	BR(horitonzal_loop_init__)
 
 	CMOVE(0xE1FFFFFF,R13) |;OPEN_V_3
+	BR(horitonzal_loop_init__)
 
 
 horitonzal_loop_init__:
@@ -126,7 +140,6 @@ horizontal_loop__:
 	AND(R15,R13,R15) |; apply the mask
 	ST(R15,R7) |; put the updated word back 
 	ADDC(R14,1,R14) |; increment iterator
-	JMP(horizontal_loop__)
+	BR(horizontal_loop__)
 
 exit__:
-
