@@ -47,19 +47,31 @@ OR(R4,R7,R4) |; update visited(R4)
 		|;	DEALLOCATE(1)
 		|;	MUL(R2, R3, R5)
 		|;	MOD(R0, R5, R6)
-MUL(R2,R3,R5) |; nb_cells in R5
+COL_FROM_INDEX(R6,R3,R8) |; col in R8
 
-COL_FROM_INDEX(R6,R5,R8) |; col in R8
+|;check left neighbour
 CMPLT(R31,R8,R7) |; 0 < col(R8)
 BF(R7,<PC>+4)
 neighbours[n_valid_neighbours++] = curr_cell - 1;
 
-
+|;check right neighbour
+SUBC(R3,1,R7) |; nb_cols - 1
+CMPLT(R8,R7,R7) |; col < nb_cols -1 (R7)
+BF(R7, <PC> +4);
+neighbours[n_valid_neighbours++] = curr_cell + 1;
 
 ROW_FROM_INDEX(R6,R5,R8) |; row in R8
+
+|;check top neighbour
 CMPLT(R31,R8,R7) |; 0 < row(R8)
 BF(R7,<PC>+4)
 neighbours[n_valid_neighbours++] = curr_cell - nb_cols;
+
+|;check bottom neighbour
+SUBC(R2,1,R7) |; nb_rows - 1
+CMPLT(R8,R7,R7) |; row < nb_rows -1 (R7)
+BF(R7, <PC> +4)
+neighbours[n_valid_neighbours++] = curr_cell + nb_cols;
 
 
 
