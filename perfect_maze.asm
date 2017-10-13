@@ -57,8 +57,8 @@ connect__:
 |; *****************************Open vertical connection************************************
 vertical__:
 	SUB(R10,R9,R7) |; dest-source
-	SUBC(R7,1,R7) |; dest-source -1
-	BT(R7,horizontal__) |; if not > 1(that means here R7 = 0, it is a horizontal connection
+	CMPLEC(R7, 1, R7) |; if dest-source <= 1 --> R7 = 1
+	BT(R7,horizontal__) |; if R7 == 1 -->  horizontal connection
 
 	CMPEQC(R12,0,R7) |; examine the byte offset
 	CMOVE(0xFFFFFF00,R13) |;OPEN_V_0 , we put the mask in R13
