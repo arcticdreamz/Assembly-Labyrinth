@@ -12,7 +12,7 @@ cells_per_word = 4
 
 
 |; Reg[Rc] <- Reg[Ra] % Reg[Rb] (Rc should be different from Ra and Rb)
-.macro MOD(Ra, Rb, Rc) DIV(Ra, Rb, Rc) MUL(Rc, Rb, Rc) SUB(Ra, Rc, Rc)
+.macro MOD(Ra, Rb, Rc) DIV(Ra, Rb, Rc) MUL(Rc, Rb, Rc) SUB(Ra, Rc, Rc) 
 
 |;Reg[Rc] <- Reg[Ra] % C
 .macro MODC(Ra, C, Rc) DIVC(Ra, C, Rc) MULC(Rc, C, Rc) SUBC(Ra, Rc, Rc)
