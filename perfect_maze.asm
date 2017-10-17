@@ -24,14 +24,18 @@ cells_per_word = 4
 |;Return the column of the cell at given index.
 .macro COL_FROM_INDEX(Ra,Rb,Rc) MOD(Ra,Rb,Rc)
 |; ***************************************************************
-
+.macro INIT() 	PUSH(LP) PUSH(BP) MOVE(SP,BP)
 
 
 perfect_maze:
-	PUSH(LP)
-	PUSH(BP)
-	MOVE(SP,BP)
-	ALLOCATE() |; je ne sais pas combien allouer
+	INIT()
+	|; on push les registres qu'on va vouloir utiliser
+	PUSH(R1) 
+	PUSH(R2)
+	PUSH(R3)
+	PUSH(R4)
+	PUSH(R6)
+	|; on loade les valeurs du stack dans les registres
 	LD(BP,-12,R1) |;maze --> R1
 	LD(BP,-16,R2) |;nb_rows --> R2
 	LD(BP,-20,R3) |;nb_cols --> R3
@@ -51,13 +55,16 @@ perfect_maze:
 		|;	MUL(R2, R3, R5)
 		|;	MOD(R0, R5, R6)
 	COL_FROM_INDEX(R6,R3,R8) |; col in R8
+	|; on doit faire ça dynamiquement, i.e. allouer le bon nombre de words
+	ALLOCATE(4) |; allocate 4 words in memory for the neighbour array
 	CMOVE(0,R9); |; n_valid_neighbours
 
 	|;check left neighbour
 	CMPLT(R31,R8,R7) |; 0 < col(R8)
 	BF(R7,<PC>+8)
 	SUBC(R6,1,R7) |; curr_cell - 1
-	neighbours[n_valid_neighbours++] = curr_cell - 1;
+	MOVE(R7,R20) |; neighbour array start at R20
+	|;neighbours[n_valid_neighbours++] = curr_cell - 1;
 	ADDC(R9,1,R9) |;n_valid_neighbours++
 
 	|;check right neighbour
@@ -65,7 +72,8 @@ perfect_maze:
 	CMPLT(R8,R7,R7) |; col < nb_cols -1 (R7)
 	BF(R7, <PC> +8)
 	ADDC(R6,1,R7) |; curr_cell + 1
-	neighbours[n_valid_neighbours++] = curr_cell + 1;
+	|;MOVE(R7,R16) |; 2nd element at R16
+	|;neighbours[n_valid_neighbours++] = curr_cell + 1;
 	ADDC(R9,1,R9) |;n_valid_neighbours++
 
 	ROW_FROM_INDEX(R6,R5,R8) |; row in R8
@@ -74,7 +82,8 @@ perfect_maze:
 	CMPLT(R31,R8,R7) |; 0 < row(R8)
 	BF(R7,<PC>+8)
 	SUB(R6,R3,R7) |; curr_cell - nb_cols
-	neighbours[n_valid_neighbours++] = curr_cell - nb_cols;
+	|;MOVE(R7,R17) |; 3rd element at R17
+	|;neighbours[n_valid_neighbours++] = curr_cell - nb_cols;
 	ADDC(R9,1,R9) |;n_valid_neighbours++
 
 
@@ -83,7 +92,8 @@ perfect_maze:
 	CMPLT(R8,R7,R7) |; row < nb_rows -1 (R7)
 	BF(R7, <PC> +8)
 	ADD(R6,R3,R7) |; curr_cell + nb_cols
-	neighbours[n_valid_neighbours++] = curr_cell + nb_cols;
+	|;MOVE(R7,R18) |; 4th element at R18
+	|;neighbours[n_valid_neighbours++] = curr_cell + nb_cols;
 	ADDC(R9,1,R9) |;n_valid_neighbours++
 
 
@@ -97,24 +107,49 @@ perfect_maze:
 	|; RECURSIVITE
 	POP(BP)
 	POP(LP)
+	PUSH(R6) |; push curr_cell/source for connect
+	PUSH(R4) |; push visited
+	PUSH(R20) |; push neigbour
+	PUSH(R3) |; push nb_cols	
+	PUSH(R1) |; push maze
 	CALL(connect__)
+
+	PUSH(R6) |; curr_cell
+	PUSH(R4) |; visited
+	PUSH(R3) |; cols
+	PUSH(R2) |; rows
+	PUSH(R1) |;maze
 	CALL(perfect_maze)
 
 
 
 
 connect__:
-	PUSH(LP)
-	PUSH(BP)
-	MOVE(SP,BP)
-	|; We'll use R7 as a temporary registers for most things
+	INIT()	
+	|; on peut remettre dans les registres qu'on veut
+	|; on PUSH les registres qu'on veut utiliser
+	PUSH(R6) |; push curr_cell/source for connect
+	PUSH(R4) |; push visited
+	PUSH(R20) |; push neigbour
+	PUSH(R3) |; push nb_cols	
+	PUSH(R1) |; push maze
+	|; on loade les valeurs présentes dans le stack
+	|; dans les registres qu'on a push
+	LD(BP,-12,R1) |;maze --> R1
+	LD(BP,-16,R3) |;nb_cols --> R3
+	LD(BP,-20,R20) |;neighbour --> R20
+	LD(BP,-24,R4) |;visited --> R4
+	LD(BP,-28,R6) |;curr_cell/source --> R6
+	
+
+	|; We'll use R7 as a temporary register for most things
 
 	|;*****************************SWAP*************************************
-	CMOVE(source,R9)
-	CMOVE(dest,R10)
-	CMPLT(R9,R10,R7) |; make sure source is *before* dest in the maze (source < dest)
+	|; source == curr_cell in R6
+	|; dest = neigbour(first element) in R20
+	CMPLT(R6,R20,R7) |; make sure source is *before* dest in the maze (source < dest)
 	BT(R7,<PC>+4) |; no need to swap, so we jump the swap function
-	SWAP(R10,R9,R7)
+	SWAP(R20,R6,R7)
 
 	|;**********************************************************************
 				|;int dest_row = row_from_index(dest, nb_cols);
@@ -127,9 +162,9 @@ connect__:
 
 	|; TODO: R8 is empty, shift all registers so that R8 is filled again
 
-	ROW_FROM_INDEX(R10,R3,R7)|; dest_row dans R7, R3 contient déjà col (cf main.asm)
+	ROW_FROM_INDEX(R20,R3,R7)|; dest_row dans R7, R3 contient déjà col (cf main.asm)
 	MUL(words_per_row,R7,R11) |; row_offset dans R11
-	COL_FROM_INDEX(R9,R3,R7) |;source_col dans R7
+	COL_FROM_INDEX(R6,R3,R7) |;source_col dans R7
 	ROW_FROM_INDEX(R7,cells_per_word,R12) |; word_offset_in_line dans R12
 	ADD(R11,R12,R11) |; word offset dans R11
 	COL_FROM_INDEX(R7,cells_per_word,R12) |; byte_offset dans R12
@@ -137,7 +172,7 @@ connect__:
 
 |; *****************************Open vertical connection************************************
 vertical__:
-	SUB(R10,R9,R7) |; dest-source
+	SUB(R20,R6,R7) |; dest-source
 	CMPLEC(R7, 1, R7) |; if dest-source <= 1 --> R7 = 1
 	BT(R7,horizontal__) |; if R7 == 1 -->  horizontal connection
 
@@ -217,4 +252,9 @@ horizontal_loop__:
 connect_end__:
 POP(BP)
 POP(LP)
+POP(R6) |; POP curr_cell/source for connect
+POP(R4) |; POP visited
+POP(R20) |; POP neigbour
+POP(R3) |; POP nb_cols	
+POP(R1) |; POP maze
 RTN()

@@ -1,4 +1,9 @@
 Questions à poser : 
 - comment accéder à un WORD particulier dans le labyrinthe
 -LD et ST ?
-- Comment aller changer un bit dans un word précis de visited ?
+- Comment aller changer un bit dans un word précis de visited (shift visited de 7x32 bits?) ?
+- Comment faire tableau neighbour ?
+- Comment fonctionne STORAGE et ALLOCATE/DEALLOCATE ?
+- Comment utiliser RANDOM() ?
+- Comment implémenter la récursivité
+- Peut-on faire : BT(Ra, <PC> + 4)
