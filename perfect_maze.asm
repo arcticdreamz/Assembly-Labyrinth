@@ -61,42 +61,43 @@ perfect_maze:
 
 	|;check left neighbour
 	CMPLT(R31,R8,R7) |; 0 < col(R8)
-	BF(R7,<PC>+8)
+	BF(R7,checkRight)
 	SUBC(R6,1,R7) |; curr_cell - 1
 	MOVE(R7,R20) |; neighbour array start at R20
 	|;neighbours[n_valid_neighbours++] = curr_cell - 1;
 	ADDC(R9,1,R9) |;n_valid_neighbours++
 
+checkRight:
 	|;check right neighbour
 	SUBC(R3,1,R7) |; nb_cols - 1
 	CMPLT(R8,R7,R7) |; col < nb_cols -1 (R7)
-	BF(R7, <PC> +8)
+	BF(R7,checkTop)
 	ADDC(R6,1,R7) |; curr_cell + 1
 	|;MOVE(R7,R16) |; 2nd element at R16
 	|;neighbours[n_valid_neighbours++] = curr_cell + 1;
 	ADDC(R9,1,R9) |;n_valid_neighbours++
 
 	ROW_FROM_INDEX(R6,R5,R8) |; row in R8
-
+checkTop:
 	|;check top neighbour
 	CMPLT(R31,R8,R7) |; 0 < row(R8)
-	BF(R7,<PC>+8)
+	BF(R7,checkBottom)
 	SUB(R6,R3,R7) |; curr_cell - nb_cols
 	|;MOVE(R7,R17) |; 3rd element at R17
 	|;neighbours[n_valid_neighbours++] = curr_cell - nb_cols;
 	ADDC(R9,1,R9) |;n_valid_neighbours++
 
-
+checkBottom:
 	|;check bottom neighbour
 	SUBC(R2,1,R7) |; nb_rows - 1
 	CMPLT(R8,R7,R7) |; row < nb_rows -1 (R7)
-	BF(R7, <PC> +8)
+	BF(R7,randomize)
 	ADD(R6,R3,R7) |; curr_cell + nb_cols
 	|;MOVE(R7,R18) |; 4th element at R18
 	|;neighbours[n_valid_neighbours++] = curr_cell + nb_cols;
 	ADDC(R9,1,R9) |;n_valid_neighbours++
 
-
+randomize:
 
 
 
@@ -113,6 +114,7 @@ perfect_maze:
 	PUSH(R3) |; push nb_cols	
 	PUSH(R1) |; push maze
 	CALL(connect__)
+	DEALLOCATE(5)
 
 	PUSH(R6) |; curr_cell
 	PUSH(R4) |; visited
@@ -120,6 +122,7 @@ perfect_maze:
 	PUSH(R2) |; rows
 	PUSH(R1) |;maze
 	CALL(perfect_maze)
+	DEALLOCATE(5)
 
 
 
@@ -177,22 +180,25 @@ vertical__:
 	BT(R7,horizontal__) |; if R7 == 1 -->  horizontal connection
 
 	CMPEQC(R12,0,R7) |; examine the byte offset
-	BF(R7,<PC>+8)
+	BF(R7,openV1)
 	CMOVE(0xFFFFFF00,R13) |;OPEN_V_0 , we put the mask in R13
 	BR(vert_loop_init__)
 
+openV1: 
 	CMPEQC(R12,1,R7)
-	BF(R7,<PC>+8)
+	BF(R7,openV2)
 	CMOVE(0xFFFF00FF,R13) |;OPEN_V_1
 	BR(vert_loop_init__)
 
+openV2:
 	CMPEQC(R12,2,R7)
-	BF(R7,<PC>+8)
+	BF(R7,openV3)
 	CMOVE(0xFF00FFFF,R13) |;OPEN_V_2
 	BR(vert_loop_init__)
 
+openV3:
 	CMOVE(0x00FFFFFF,R13) |;OPEN_V_3
-	BR(vert_loop_init__)
+	
 
 
 vert_loop_init__:
@@ -215,22 +221,22 @@ vert_loop__:
 
 horizontal__:
 	CMPEQC(R12,0,R7) |; examine the byte offset
-	BF(R7,<PC>+8)
+	BF(R7,openH1)
 	CMOVE(0xFFFFFFE1,R13) |;OPEN_H_0 , we put the mask in R13
 	BR(horitonzal_loop_init__)
 
+openH1:
 	CMPEQC(R12,1,R7)
-	BF(R7,<PC>+8)
-	CMOVE(0xFFFFE1FF,R13) |;OPEN_V_1
+	BF(R7,openH2)
+	CMOVE(0xFFFFE1FF,R13) |;OPEN_H_1
 	BR(horitonzal_loop_init__)
-
+openH2:
 	CMPEQC(R12,2,R7)
-	BF(R7,<PC>+8)
-	CMOVE(0xFFE1FFFF,R13) |;OPEN_V_2
+	BF(R7,openH3)
+	CMOVE(0xFFE1FFFF,R13) |;OPEN_H_2
 	BR(horitonzal_loop_init__)
-
-	CMOVE(0xE1FFFFFF,R13) |;OPEN_V_3
-	BR(horitonzal_loop_init__)
+openH3:
+	CMOVE(0xE1FFFFFF,R13) |;OPEN_H_3
 
 
 horitonzal_loop_init__:
