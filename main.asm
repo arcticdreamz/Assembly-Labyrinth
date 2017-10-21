@@ -88,7 +88,7 @@ main__:
 	HALT()
 
 .include perfect_maze.asm
-
+	
 	|; check for 0xDEADCAFE in the memory explorer 
 	|; to find the base of the stack
 	LONG(0xDEADCAFE)
