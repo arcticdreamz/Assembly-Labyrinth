@@ -1,4 +1,4 @@
-
+	
  |; ***************************************************************
 |; constants
 nb_rows = 8
@@ -44,28 +44,29 @@ neigbour0:
 	CMPEQC(R9,0,R11)
 	BF(R11,neighbour4)
 	LD(R20,0,R10) 
-	ST(R7,0,R10)
+	MOVE(R7,R10)
 	BR(valid_neighbour_end)
 			
 neighbour4:
 	CMPEQC(R9,4,R11)
 	BF(R11,neighbour8)
 	LD(R20,4,R10) 
-	ST(R7,4,R10)  
+	MOVE(R7,R10)
 	BR(valid_neighbour_end)
 		
 neighbour8:
 	CMPEQC(R9,8,R11)
 	BF(R11,neighbour12)
 	LD(R20,8,R10) 
-	ST(R7,8,R10)  
+	MOVE(R7,R10) 
 	BR(valid_neighbour_end)
 
 neighbour12:		
 	CMPEQC(R9,12,R11)
 	BF(R11,valid_neighbour_end)
 	LD(R20,12,R10) 
-	ST(R7,12,R10) 
+	MOVE(R7,R10)
+ 
 	BR(valid_neighbour_end)
 
 valid_neighbour_end:
@@ -115,30 +116,15 @@ perfect_maze:
 	ADD(R8,R4,R8) |; R8 = visited(R4)+offset(R8)
 	OR(R8,R7,R8) |; update visited+offset
 
-init_neighbours:	
-	LD(R20,0,R7)
-	ST(R31,0,R7)
-
-	LD(R20,4,R7)
-	ST(R31,4,R7) 
-
-	LD(R20,8,R7)
-	ST(R31,8,R7)
-
-	LD(R20,12,R7)
-	ST(R31,12,R7)
-
-
-
 
 	COL_FROM_INDEX(R6,R3,R8) |; col in R8
 	CMOVE(0,R9) |; n_valid_neighbours
 
 checkLeft: 
-	.breakpoint
 	CMPLEC(R8,0,R7) |; 0 <= col(R8) ? Si faux, on l'ajoute
 	BT(R7,checkRight)
 	SUBC(R6,1,R7) |; curr_cell - 1
+	.breakpoint
 
 	PUSH(R9)
 	PUSH(R11)
@@ -210,8 +196,9 @@ while_loop:
 	MOD(R0,R7,R8) |; random_neigh_index (random % n_valid_neighbours/4)
 	MULC(R8,4,R8) |; random_neigh_index_offset (0 4 8 12)
 	ADD(R20,R7,R7) |; neighbour + random_neigh_index_offset
+		.breakpoint
+
 	LD(R7,0,R19) |;neighbour = R19
-	.breakpoint
 	SUBC(R9,4,R11) |; n_valid_neighbours - 1 
 
 
@@ -219,7 +206,6 @@ while_loop:
 	LD(R11,0,R11) 
 	ADD(R20,R8,R7) |; neighbours + random_neigh_index
 	LD(R7,0,R12) 
-	.breakpoint
 
 	SWAP(R11,R12,R7)
 	SUBC(R9,4,R9) |; n_valid_neigbours--
@@ -228,7 +214,6 @@ while_loop:
 	DIVC(R19,8,R8) |; neighbour/32 * 4
 	ADD(R4,R8,R8)
 	LD(R8,0,R8) |; visited[neighbour/32]
-	.breakpoint
 
 	SHR(R8,R7,R8) |; Shift bitmap vers la droite de (neighbour % 32)
 	ANDC(R8,1,R8) |; visited_bit = R8
@@ -241,13 +226,12 @@ while_loop:
 
 
 	|; RECURSIVITE
-
+	.breakpoint
 	PUSH(R6) |; push curr_cell/source for connect
 	PUSH(R4) |; push visited
-	PUSH(R19) |; push neigbour (=! neighbours)
+	PUSH(R19) |; push neigbour (!= neighbours)
 	PUSH(R3) |; push nb_cols	
 	PUSH(R1) |; push maze
-	.breakpoint
 
 	CALL(connect__)			
 	DEALLOCATE(5)
@@ -257,7 +241,6 @@ while_loop:
 	PUSH(R3) |; cols
 	PUSH(R2) |; rows
 	PUSH(R1) |;maze
-	.breakpoint
 
 	CALL(perfect_maze)
 	DEALLOCATE(5)
@@ -294,22 +277,26 @@ connect__:
 
 	|; source == curr_cell in R6
 	|; dest = neigbour in R19
-	CMPLT(R6,R19,R7) |; make sure source is *before* dest in the maze (source < dest)
-	BT(R7,byte_offset) |; no need to swap, so we jump the swap function
-	SWAP(R19,R6,R7)
+|;CMPLT(R6,R19,R7) |; make sure source is *before* dest in the maze (source < dest)
+|;BT(R7,byte_offset) |; no need to swap, so we jump the swap function
+|;SWAP(R19,R6,R7)
 
 byte_offset:
 	.breakpoint
+
 	ROW_FROM_INDEX(R19,R3,R7)|; dest_row dans R7, R3 contient déjà col (cf main.asm)
-	MUL(words_per_row,R7,R11) |; row_offset dans R11
+	CMOVE(64,R11) |; 64 words per row
+	MUL(R11,R7,R11) |; row_offset dans R11
 	COL_FROM_INDEX(R6,R3,R7) |;source_col dans R7
-	ROW_FROM_INDEX(R7,cells_per_word,R12) |; word_offset_in_line dans R12
+	CMOVE(4,R4) |; cells per word
+	ROW_FROM_INDEX(R7,R4,R12) |; word_offset_in_line dans R12
 	ADD(R11,R12,R11) |; word offset dans R11
-	COL_FROM_INDEX(R7,cells_per_word,R12) |; byte_offset dans R12
+	COL_FROM_INDEX(R7,R4,R12) |; byte_offset dans R12
 |;******************************************************************************************
 
 |; *****************************Open vertical connection************************************
 vertical__:
+.breakpoint
 	SUB(R19,R6,R7) |; dest-source
 	CMPLEC(R7, 1, R7) |; if dest-source <= 1 --> R7 = 1
 	BT(R7,horizontal__) |; if R7 == 1 -->  horizontal connection
@@ -341,8 +328,8 @@ vert_loop_init__:
 vert_loop__:
 	CMPEQC(R14,7, R7)
 	BT(R7,connect_end__)
-	.breakpoint
-	MULC(R14,words_per_mem_line,R7) |; iterator*words_per_mem_line
+	CMOVE(8,R7) |; 8 words per mem line
+	MULC(R14,R7,R7) |; iterator*words_per_mem_line
 	ADD(R11,R7,R7) |; word_offset + iterator*words_per_mem_line
 	
 	MULC(R7,4,R7) |; R7 now contains the adress of the *word* to be changed
@@ -356,6 +343,8 @@ vert_loop__:
 
 
 horizontal__:
+.breakpoint
+
 	CMPEQC(R12,0,R7) |; examine the byte offset
 	BF(R7,openH1)
 	CMOVE(0xFFFFFFE1,R13) |;OPEN_H_0 , we put the mask in R13
@@ -378,10 +367,11 @@ openH3:
 horitonzal_loop_init__:
 	CMOVE(0,R14) |; initialise the iterator to 0
 horizontal_loop__:
+.breakpoint
 	CMPEQC(R14,2, R7)
 	BT(R7,connect_end__)
-	.breakpoint
-	MULC(R14,words_per_mem_line,R7) |; iterator*words_per_mem_line
+	CMOVE(8,R7) |; 8 words per mem line
+	MULC(R14,R7,R7) |; iterator*words_per_mem_line
 	ADD(R11,R7,R7) |; word_offset + iterator*words_per_mem_line
 
 	MULC(R7,4,R7) |; R7 now contains the adress of the *word* to be changed
@@ -393,7 +383,6 @@ horizontal_loop__:
 	BR(horizontal_loop__)
 
 connect_end__:
-	.breakpoint
 	POP(R1) |; POP maze
 	POP(R3) |; POP nb_cols	
 	POP(R19) |; POP neigbour

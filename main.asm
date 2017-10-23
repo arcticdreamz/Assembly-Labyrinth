@@ -83,13 +83,12 @@ main__:
 	PUSH(R3)
 	PUSH(R2)
 	PUSH(R1)
-	.breakpoint
 	CALL(perfect_maze)
 	DEALLOCATE(5)
 	HALT()
 
 .include perfect_maze.asm
-	
+
 	|; check for 0xDEADCAFE in the memory explorer 
 	|; to find the base of the stack
 	LONG(0xDEADCAFE)
