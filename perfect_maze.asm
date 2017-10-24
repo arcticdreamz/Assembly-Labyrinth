@@ -104,13 +104,6 @@ perfect_maze:
 	INIT()
 	.breakpoint
 	CMOVE(neighbours,R20)
-	ST(R31,neighbours)
-	ST(R31,neighbours+4)
-	ST(R31,neighbours+8)
-	ST(R31,neighbours+12)
-
-
-
 	PUSH(R1) 
 	PUSH(R2)
 	PUSH(R3)
@@ -124,7 +117,7 @@ perfect_maze:
 	LD(BP,-16,R2) |;nb_rows --> R2
 	LD(BP,-20,R3) |;nb_cols --> R3
 	LD(BP,-24,R4) |;visited --> R4
-	LD(BP,-28,R6) |;curr_cell --> R6
+	LD(BP,-28,R6) |;curr_cell --> R6 , old neighbour if recursive call
 
 
  |;update_visited
@@ -199,11 +192,22 @@ checkBottom:
 	PUSH(R20)
 	PUSH(R10)
 	CALL(valid_neighbour)
-	DEALLOCATE(5)
+	DEALLOCATE(5)	
+
 	ADDC(R9,4,R9) |;n_valid_neighbours++
+	LD(neighbours,R20)
+	PUSH(R20)
+	LD(neighbours+4,R20)
+	PUSH(R20)
+	LD(neighbours+8,R20)
+	PUSH(R20)
+	LD(neighbours+12,R20)
+	PUSH(R20)
+
+
 
 while_loop:
-
+	
 	CMPLTC(R9,0,R7) |; n_valid_neighbours <= 0? Si vrai, on sort
 	BT(R7,perfect_maze_end)
 	|; randomly select one neighbour
@@ -213,19 +217,23 @@ while_loop:
 	DEALLOCATE(1)
 	DIVC(R9,4,R7) |; n_valid_neighbours/4
 	MOD(R0,R7,R8) |; random_neigh_index (random % n_valid_neighbours/4)
-	MULC(R8,4,R8) |; random_neigh_index_offset (0 4 8 12)
-	ADD(R20,R8,R7) |; neighbour + random_neigh_index_offset
+	|; random_neigh£_index is now 0 1 2 3
+	|; We have to add 7 to this number because we have
+	|; 7 local variables; 7 registers we pushed at the start
+	|; of the perfect_maze call
+	|; we take a random neighbour from the stack
+	ADDC(BP,4*7,R20)|; Début de l'array neighbour sur le stack
+	MULC(R8,4,R7) |; on multiplie l'offset par 4
+	ADD(R20,R7,R7) |; R7 = R20 + 4*random_neigh_index = adresse neighbour choisi au hasard
+	LD(R7,0,R19)  |;neighbour = R19
+	SUBC(R9,4,R11) |; n_valid_neighbours - 1 == fin du tableau neighbours
 
-	LD(R7,0,R19) |;neighbour = R19
-	SUBC(R9,4,R11) |; n_valid_neighbours - 1 
-
-
+	|ON SWAP LE NEIGHBOUR CHOISI AVEC CELUI A LA FIN
 	ADD(R20,R11,R11) |;R11 contient l'adresse de  neighbours + n_valid_neighbours - 1
-	LD(R11,0,R11)  |; R11 = index de neighbours + n_valid_neighbours - 1
-	ADD(R20,R8,R7) |; neighbours + random_neigh_index
-	LD(R7,0,R12) 
+	LD(R11,0,R10) |; on sauvegarde la valeur de la fin du tableau
+	ST(R19,0,R11) |; on va y placer la valeur du neighbour au hasard
+	ST(R10,0,R7) 
 
-	SWAP(R11,R12,R7)
 	SUBC(R9,4,R9) |; n_valid_neigbours--
 	MODC(R19,32,R7) |; neighbour % 32
 	DIVC(R19,8,R8) |; neighbour/32 * 4
@@ -240,8 +248,7 @@ while_loop:
 
 
 
-
-
+	.breakpoint
 	|; RECURSIVITE
 	PUSH(R6) |; push curr_cell/source for connect
 	PUSH(R4) |; push visited
@@ -249,16 +256,19 @@ while_loop:
 	PUSH(R3) |; push nb_cols	
 	PUSH(R1) |; push maze
 
-	CALL(connect__)			
+	CALL(connect__)	
+	.breakpoint		
 	DEALLOCATE(5)
 
-	PUSH(R6) |; curr_cell
+	PUSH(R19) |; neighbour becomes new curr_cell
 	PUSH(R4) |; visited
 	PUSH(R3) |; cols
 	PUSH(R2) |; rows
 	PUSH(R1) |;maze
+	.breakpoint		
 	CALL(perfect_maze)
-	DEALLOCATE(5)
+	.breakpoint		
+	DEALLOCATE(9) |; 4 neighbour + 5 registers
 
 perfect_maze_end:
 	POP(R6)
@@ -274,6 +284,7 @@ connect__:
 	INIT()	
 	|; on peut remettre dans les registres qu'on veut
 	|; on PUSH les registres qu'on veut utiliser
+	.breakpoint		
 	PUSH(R6) |; push curr_cell/source for connect
 	PUSH(R4) |; push visited
 	PUSH(R19) |; push neigbour
@@ -314,25 +325,30 @@ vertical__:
 	SUB(R19,R6,R7) |; dest-source
 	CMPLEC(R7, 1, R7) |; if dest-source <= 1 --> R7 = 1
 	BT(R7,horizontal__) |; if R7 == 1 -->  horizontal connection
+	
 	CMPEQC(R12,0,R7) |; examine the byte offset
 	BF(R7,openV1)
 	CMOVE(OPEN_V_0,R13) |;OPEN_V_0 , we put the mask in R13
+	LD(R13,0,R13)
 	BR(vert_loop_init__)
 
 openV1: 
 	CMPEQC(R12,1,R7)
 	BF(R7,openV2)
 	CMOVE(OPEN_V_1,R13) |;OPEN_V_1
+	LD(R13,0,R13)
 	BR(vert_loop_init__)
 
 openV2:
 	CMPEQC(R12,2,R7)
 	BF(R7,openV3)
 	CMOVE(OPEN_V_2,R13) |;OPEN_V_2
+	LD(R13,0,R13)
 	BR(vert_loop_init__)
 
 openV3:
 	CMOVE(OPEN_V_3,R13) |;OPEN_V_3
+	LD(R13,0,R13)
 	
 
 
@@ -359,21 +375,25 @@ horizontal__:
 	CMPEQC(R12,0,R7) |; examine the byte offset
 	BF(R7,openH1)
 	CMOVE(OPEN_H_0,R13) |;OPEN_H_0 , we put the mask in R13
+	LD(R13,0,R13)
 	BR(horitonzal_loop_init__)
 
 openH1:
 	CMPEQC(R12,1,R7)
 	BF(R7,openH2)
 	CMOVE(OPEN_H_1,R13) |;OPEN_H_1
+	LD(R13,0,R13)
 	BR(horitonzal_loop_init__)
 openH2:
 	CMPEQC(R12,2,R7)
 	BF(R7,openH3)
 	|; A LA PLACE DE `METTRE 0xFFE1FFFF il mets -1
 	CMOVE(OPEN_H_2,R13) |;OPEN_H_2
+	LD(R13,0,R13)
 	BR(horitonzal_loop_init__)
 openH3:
 	CMOVE(OPEN_H_3,R13) |;OPEN_H_3
+	LD(R13,0,R13)
 
 
 horitonzal_loop_init__:
