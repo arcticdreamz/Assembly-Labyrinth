@@ -11,14 +11,22 @@ nb_maze_words = 512
 cells_per_word = 4
 
 
-OPEN_V_0 = 0xFFFFFF00
-OPEN_V_1 = 0xFFFF00FF
-OPEN_V_2 = 0xFF00FFFF
-OPEN_V_3 = 0x00FFFFFF
-OPEN_H_0 = 0xFFFFFFE1
-OPEN_H_1 = 0xFFFFE1FF
-OPEN_H_2 = 0xFFE1FFFF
-OPEN_H_3 = 0xE1FFFFFF
+OPEN_V_0:
+ LONG(0xFFFFFF00)
+OPEN_V_1:
+ LONG(0xFFFF00FF)
+OPEN_V_2:
+ LONG(0xFF00FFFF)
+OPEN_V_3:
+ LONG(0x00FFFFFF)
+OPEN_H_0:
+ LONG(0xFFFFFFE1)
+OPEN_H_1:
+ LONG(0xFFFFE1FF)
+OPEN_H_2:
+ LONG(0xFFE1FFFF)
+OPEN_H_3:
+ LONG(0xE1FFFFFF)
 
 
 .macro MODC(Ra, CC, Rc) DIVC(Ra, CC, Rc) MULC(Rc, CC, Rc) SUB(Ra, Rc, Rc)
@@ -89,11 +97,12 @@ valid_neighbour_end:
 
 |;allocate 4 words in memory for the neighbour array
 neighbours: 
-	ALLOCATE(4) 
+	STORAGE(4) 
 
 
 perfect_maze:
 	INIT()
+	.breakpoint
 	CMOVE(neighbours,R20)
 	ST(R31,neighbours)
 	ST(R31,neighbours+4)
@@ -248,7 +257,6 @@ while_loop:
 	PUSH(R3) |; cols
 	PUSH(R2) |; rows
 	PUSH(R1) |;maze
-
 	CALL(perfect_maze)
 	DEALLOCATE(5)
 
@@ -306,7 +314,6 @@ vertical__:
 	SUB(R19,R6,R7) |; dest-source
 	CMPLEC(R7, 1, R7) |; if dest-source <= 1 --> R7 = 1
 	BT(R7,horizontal__) |; if R7 == 1 -->  horizontal connection
-	.breakpoint
 	CMPEQC(R12,0,R7) |; examine the byte offset
 	BF(R7,openV1)
 	CMOVE(OPEN_V_0,R13) |;OPEN_V_0 , we put the mask in R13
@@ -349,8 +356,6 @@ vert_loop__:
 
 
 horizontal__:
-	.breakpoint
-
 	CMPEQC(R12,0,R7) |; examine the byte offset
 	BF(R7,openH1)
 	CMOVE(OPEN_H_0,R13) |;OPEN_H_0 , we put the mask in R13
