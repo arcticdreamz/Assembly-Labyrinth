@@ -46,6 +46,7 @@ OPEN_H_3:
 
 
 perfect_maze:
+	.breakpoint
 	INIT()
 	PUSH(R1) 
 	PUSH(R2)
@@ -67,15 +68,18 @@ perfect_maze:
 	CMOVE(1,R7)
 	MODC(R6,32,R8) |; curr_cell in R6, (curr_cell % 32) 
 	SHL(R7,R8,R7) |; shift 1 (R7) left by R8 bits
-	DIVC(R6,8,R8) |; curr_cell/32 * 4
+	DIVC(R6,32,R8) |; curr_cell/32
+	MULC(R8,4,R8) |; R8 * 4 
 	ADD(R8,R4,R8) |; R8 = visited(R4)+offset(R8)
-	OR(R8,R7,R8) |; update visited+offset
+	LD(R8,0,R9) |; R9 = visited[curr_cell /32]
+	OR(R9,R7,R7) |; update visited+offset
+	ST(R7,0,R8) |; put the updated visited back
 
 
 	COL_FROM_INDEX(R6,R3,R8) |; col in R8
 	CMOVE(0,R9) |; n_valid_neighbours
 
-.
+
 checkLeft: 
 	CMPLEC(R8,0,R7) |; col <= 0 ? Si faux, on l'ajoute
 	BT(R7,checkRight)
@@ -91,9 +95,7 @@ checkRight:
 	ADDC(R6,1,R7)|; curr_cell +1
 	PUSH(R7)	
 	ADDC(R9,4,R9) |;n_valid_neighbours++
-	.breakpoint
 	ROW_FROM_INDEX(R6,R3,R8) |; row in R8
-	.breakpoint
 
 checkTop:
 	|;check top neighbour
@@ -111,7 +113,6 @@ checkBottom:
 	PUSH(R7)	
 	ADDC(R9,4,R9) |;n_valid_neighbours++
 
-	.breakpoint
 
 
 
@@ -136,7 +137,6 @@ while_loop:
 	|; of the perfect_maze call
 	|; we take a random neighbour from the stack
 	ADDC(BP,4*7,R20)|; Début de l'array neighbour sur le stack
-		.breakpoint
 
 	MULC(R8,4,R7) |; on multiplie l'offset par 4
 	ADD(R20,R7,R7) |; R7 = R20 + 4*random_neigh_index = adresse neighbour choisi au hasard
@@ -169,19 +169,22 @@ while_loop:
 	PUSH(R19) |; push neigbour (!= neighbours)
 	PUSH(R3) |; push nb_cols	
 	PUSH(R1) |; push maze
+	.breakpoint
 
 	CALL(connect__)	
-	.breakpoint		
-	DEALLOCATE(5)
+	.breakpoint
 
+	DEALLOCATE(5)
 	PUSH(R19) |; neighbour becomes new curr_cell
 	PUSH(R4) |; visited
 	PUSH(R3) |; cols
 	PUSH(R2) |; rows
 	PUSH(R1) |;maze
-	.breakpoint		
+	.breakpoint
+
 	CALL(perfect_maze)
-	.breakpoint		
+		.breakpoint
+
 	DEALLOCATE(9) |; 4 neighbour + 5 registers
 
 perfect_maze_end:
