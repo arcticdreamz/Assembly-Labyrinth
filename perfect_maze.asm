@@ -46,7 +46,6 @@ OPEN_H_3:
 
 
 perfect_maze:
-	.breakpoint
 	INIT()
 	PUSH(R1) 
 	PUSH(R2)
@@ -148,15 +147,16 @@ while_loop:
 	LD(R11,0,R10) |; on sauvegarde la valeur de la fin du tableau
 	ST(R19,0,R11) |; on va y placer la valeur du neighbour au hasard
 	ST(R10,0,R7) 
-
 	SUBC(R9,4,R9) |; n_valid_neigbours--
 	MODC(R19,32,R7) |; neighbour % 32
-	DIVC(R19,8,R8) |; neighbour/32 * 4
+	DIVC(R19,32,R8) |; neighbour/32 
+	MULC(R8,4,R8) |; R8 * 4
 	ADD(R4,R8,R8)
 	LD(R8,0,R8) |; visited[neighbour/32]
-
 	SHR(R8,R7,R8) |; Shift bitmap vers la droite de (neighbour % 32)
 	ANDC(R8,1,R8) |; visited_bit = R8
+	.breakpoint
+
 	CMPEQC(R8,1,R7)
 	BT(R7,while_loop)
 
@@ -169,10 +169,8 @@ while_loop:
 	PUSH(R19) |; push neigbour (!= neighbours)
 	PUSH(R3) |; push nb_cols	
 	PUSH(R1) |; push maze
-	.breakpoint
 
 	CALL(connect__)	
-	.breakpoint
 
 	DEALLOCATE(5)
 	PUSH(R19) |; neighbour becomes new curr_cell
@@ -180,10 +178,8 @@ while_loop:
 	PUSH(R3) |; cols
 	PUSH(R2) |; rows
 	PUSH(R1) |;maze
-	.breakpoint
 
 	CALL(perfect_maze)
-		.breakpoint
 
 	DEALLOCATE(9) |; 4 neighbour + 5 registers
 
