@@ -11,6 +11,15 @@ nb_maze_words = 512
 cells_per_word = 4
 
 
+OPEN_V_0 = 0xFFFFFF00
+OPEN_V_1 = 0xFFFF00FF
+OPEN_V_2 = 0xFF00FFFF
+OPEN_V_3 = 0x00FFFFFF
+OPEN_H_0 = 0xFFFFFFE1
+OPEN_H_1 = 0xFFFFE1FF
+OPEN_H_2 = 0xFFE1FFFF
+OPEN_H_3 = 0xE1FFFFFF
+
 
 .macro MODC(Ra, CC, Rc) DIVC(Ra, CC, Rc) MULC(Rc, CC, Rc) SUB(Ra, Rc, Rc)
 
@@ -300,23 +309,23 @@ vertical__:
 	.breakpoint
 	CMPEQC(R12,0,R7) |; examine the byte offset
 	BF(R7,openV1)
-	CMOVE(0xFFFFFF00,R13) |;OPEN_V_0 , we put the mask in R13
+	CMOVE(OPEN_V_0,R13) |;OPEN_V_0 , we put the mask in R13
 	BR(vert_loop_init__)
 
 openV1: 
 	CMPEQC(R12,1,R7)
 	BF(R7,openV2)
-	CMOVE(0xFFFF00FF,R13) |;OPEN_V_1
+	CMOVE(OPEN_V_1,R13) |;OPEN_V_1
 	BR(vert_loop_init__)
 
 openV2:
 	CMPEQC(R12,2,R7)
 	BF(R7,openV3)
-	CMOVE(0xFF00FFFF,R13) |;OPEN_V_2
+	CMOVE(OPEN_V_2,R13) |;OPEN_V_2
 	BR(vert_loop_init__)
 
 openV3:
-	CMOVE(0x00FFFFFF,R13) |;OPEN_V_3
+	CMOVE(OPEN_V_3,R13) |;OPEN_V_3
 	
 
 
@@ -326,12 +335,11 @@ vert_loop__:
 	CMPEQC(R14,7, R7)
 	BT(R7,connect_end__)
 	CMOVE(8,R7) |; 8 words per mem line
-	MULC(R14,R7,R7) |; iterator*words_per_mem_line
+	MUL(R14,R7,R7) |; iterator*words_per_mem_line
 	ADD(R11,R7,R7) |; word_offset + iterator*words_per_mem_line
  
 	MULC(R7,4,R7) |; R7 now contains the adress of the *word* to be changed
-	ADD(R1,R7,R7)
-	.breakpoint
+	ADD(R1,R7,R7) |; On va à l'adresse du word à partir du début
 	LD(R7,0,R15) |; load the word to R15
 	AND(R15,R13,R25) |; apply the mask
 	ST(R25,0,R7) |; put the updated word back
@@ -342,24 +350,25 @@ vert_loop__:
 
 horizontal__:
 	.breakpoint
+
 	CMPEQC(R12,0,R7) |; examine the byte offset
 	BF(R7,openH1)
-	CMOVE(0xFFFFFFE1,R13) |;OPEN_H_0 , we put the mask in R13
+	CMOVE(OPEN_H_0,R13) |;OPEN_H_0 , we put the mask in R13
 	BR(horitonzal_loop_init__)
 
 openH1:
 	CMPEQC(R12,1,R7)
 	BF(R7,openH2)
-	CMOVE(0xFFFFE1FF,R13) |;OPEN_H_1
+	CMOVE(OPEN_H_1,R13) |;OPEN_H_1
 	BR(horitonzal_loop_init__)
 openH2:
 	CMPEQC(R12,2,R7)
 	BF(R7,openH3)
 	|; A LA PLACE DE `METTRE 0xFFE1FFFF il mets -1
-	CMOVE(0xFFE1FFFF,R13) |;OPEN_H_2
+	CMOVE(OPEN_H_2,R13) |;OPEN_H_2
 	BR(horitonzal_loop_init__)
 openH3:
-	CMOVE(0xE1FFFFFF,R13) |;OPEN_H_3
+	CMOVE(OPEN_H_3,R13) |;OPEN_H_3
 
 
 horitonzal_loop_init__:
@@ -367,7 +376,6 @@ horitonzal_loop_init__:
 horizontal_loop__:
 	CMPEQC(R14,2, R7)
 	BT(R7,connect_end__)
-	 		.breakpoint
 
 	CMOVE(8,R7) |; 8 words per mem line
 	MUL(R14,R7,R7) |; iterator*words_per_mem_line
