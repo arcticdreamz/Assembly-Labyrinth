@@ -44,66 +44,9 @@ OPEN_H_3:
 
 .macro END() MOVE(BP,SP) POP(BP) POP(LP) RTN()
 
-valid_neighbour:
-	INIT()
-	PUSH(R9)
-	PUSH(R11)
-	PUSH(R7)
-	PUSH(R20)
-	PUSH(R10)
-	LD(BP, -28, R9)
-	LD(BP, -24, R11)
-	LD(BP, -20, R7)
-	LD(BP, -16, R20)
-	LD(BP, -12, R10)
-
-neigbour0:
-	CMPEQC(R9,0,R11)
-	BF(R11,neighbour4)
-	ST(R7,neighbours)
-	BR(valid_neighbour_end)
-			
-neighbour4:
-	CMPEQC(R9,4,R11)
-	BF(R11,neighbour8)
-	ST(R7,neighbours+4)
-	BR(valid_neighbour_end)
-		
-neighbour8:
-
-	CMPEQC(R9,8,R11)
-	BF(R11,neighbour12)
-	ST(R7,neighbours+8)
-	BR(valid_neighbour_end)
-
-neighbour12:		
-	CMPEQC(R9,12,R11)
-	BF(R11,valid_neighbour_end)
-	ST(R7,neighbours+12)
-	BR(valid_neighbour_end)
-
-valid_neighbour_end:
-	
-	POP(R10)
-	POP(R20)
-	POP(R7)
-	POP(R11)
-	POP(R9)
-	POP(BP)
-	POP(LP)
-	RTN()
-
-
-
-|;allocate 4 words in memory for the neighbour array
-neighbours: 
-	STORAGE(4) 
-
 
 perfect_maze:
 	INIT()
-	.breakpoint
-	CMOVE(neighbours,R20)
 	PUSH(R1) 
 	PUSH(R2)
 	PUSH(R3)
@@ -132,77 +75,47 @@ perfect_maze:
 	COL_FROM_INDEX(R6,R3,R8) |; col in R8
 	CMOVE(0,R9) |; n_valid_neighbours
 
+.
 checkLeft: 
-	CMPLEC(R8,0,R7) |; 0 <= col(R8) ? Si faux, on l'ajoute
+	CMPLEC(R8,0,R7) |; col <= 0 ? Si faux, on l'ajoute
 	BT(R7,checkRight)
 	SUBC(R6,1,R7) |; curr_cell - 1
-
-	PUSH(R9)
-	PUSH(R11)
-	PUSH(R7)
-	PUSH(R20)
-	PUSH(R10)
-	CALL(valid_neighbour)
-	DEALLOCATE(5)
+	PUSH(R7)	
 	ADDC(R9,4,R9) |;n_valid_neighbours++
 
 checkRight:
 	|;check right neighbour
 	SUBC(R3,1,R7) |; nb_cols - 1
-	CMPLT(R8,R7,R7) |; col < nb_cols -1 (R7)
+	CMPLT(R8,R7,R7) |; col < nb_cols -1 ? (R7)
 	BF(R7,checkTop)
-	ADDC(R6,1,R7) |; curr_cell + 1
-
-	PUSH(R9)
-	PUSH(R11)
-	PUSH(R7)
-	PUSH(R20)
-	PUSH(R10)
-	CALL(valid_neighbour)
-	DEALLOCATE(5)
+	ADDC(R6,1,R7)|; curr_cell +1
+	PUSH(R7)	
 	ADDC(R9,4,R9) |;n_valid_neighbours++
+	.breakpoint
+	ROW_FROM_INDEX(R6,R3,R8) |; row in R8
+	.breakpoint
 
-	ROW_FROM_INDEX(R6,R5,R8) |; row in R8
 checkTop:
 	|;check top neighbour
-	CMPLEC(R8,0,R7) |; 0 <= row(R8) ? Si faux, on l'ajoute
+	CMPLEC(R8,0,R7) |; row <= 0 ? Si faux, on l'ajoute
 	BT(R7,checkBottom)
-
 	SUB(R6,R3,R7) |; curr_cell - nb_cols
-	PUSH(R9)
-	PUSH(R11)
-	PUSH(R7)
-	PUSH(R20)
-	PUSH(R10)
-	CALL(valid_neighbour)
-	DEALLOCATE(5)
-
+	PUSH(R7)	
 	ADDC(R9,4,R9) |;n_valid_neighbours++
-
 checkBottom:
 	|;check bottom neighbour
 	SUBC(R2,1,R7) |; nb_rows - 1
 	CMPLT(R8,R7,R7) |; row < nb_rows -1 (R7)
 	BF(R7,while_loop)
 	ADD(R6,R3,R7) |; curr_cell + nb_cols
-
-	PUSH(R9)
-	PUSH(R11)
-	PUSH(R7)
-	PUSH(R20)
-	PUSH(R10)
-	CALL(valid_neighbour)
-	DEALLOCATE(5)	
-
+	PUSH(R7)	
 	ADDC(R9,4,R9) |;n_valid_neighbours++
-	LD(neighbours,R20)
-	PUSH(R20)
-	LD(neighbours+4,R20)
-	PUSH(R20)
-	LD(neighbours+8,R20)
-	PUSH(R20)
-	LD(neighbours+12,R20)
-	PUSH(R20)
+
+	.breakpoint
+
+
+
+	
 
 
 
@@ -223,6 +136,8 @@ while_loop:
 	|; of the perfect_maze call
 	|; we take a random neighbour from the stack
 	ADDC(BP,4*7,R20)|; Début de l'array neighbour sur le stack
+		.breakpoint
+
 	MULC(R8,4,R7) |; on multiplie l'offset par 4
 	ADD(R20,R7,R7) |; R7 = R20 + 4*random_neigh_index = adresse neighbour choisi au hasard
 	LD(R7,0,R19)  |;neighbour = R19
@@ -248,7 +163,6 @@ while_loop:
 
 
 
-	.breakpoint
 	|; RECURSIVITE
 	PUSH(R6) |; push curr_cell/source for connect
 	PUSH(R4) |; push visited
@@ -284,7 +198,6 @@ connect__:
 	INIT()	
 	|; on peut remettre dans les registres qu'on veut
 	|; on PUSH les registres qu'on veut utiliser
-	.breakpoint		
 	PUSH(R6) |; push curr_cell/source for connect
 	PUSH(R4) |; push visited
 	PUSH(R19) |; push neigbour
