@@ -63,7 +63,7 @@ perfect_maze:
 	LD(BP,-28,R6) |;curr_cell --> R6 , old neighbour if recursive call
 
 
- |;update_visited
+ 	| update visited bitmap
 	CMOVE(1,R7)
 	MODC(R6,32,R8) |; curr_cell in R6, (curr_cell % 32) 
 	SHL(R7,R8,R7) |; shift 1 (R7) left by R8 bits
@@ -74,7 +74,7 @@ perfect_maze:
 	OR(R9,R7,R7) |; update visited+offset
 	ST(R7,0,R8) |; put the updated visited back
 
-
+	| check neighbours of curr_cell
 	COL_FROM_INDEX(R6,R3,R8) |; col in R8
 	CMOVE(0,R9) |; n_valid_neighbours
 
@@ -87,24 +87,24 @@ checkLeft:
 	ADDC(R9,4,R9) |;n_valid_neighbours++
 
 checkRight:
-	|;check right neighbour
+	|check right neighbour
 	SUBC(R3,1,R7) |; nb_cols - 1
 	CMPLT(R8,R7,R7) |; col < nb_cols -1 ? (R7)
 	BF(R7,checkTop)
 	ADDC(R6,1,R7)|; curr_cell +1
 	PUSH(R7)	
 	ADDC(R9,4,R9) |;n_valid_neighbours++
-	ROW_FROM_INDEX(R6,R3,R8) |; row in R8
 
-checkTop:
-	|;check top neighbour
+checkTop:	
+	ROW_FROM_INDEX(R6,R3,R8) |; row in R8
+	|check top neighbour
 	CMPLEC(R8,0,R7) |; row <= 0 ? Si faux, on l'ajoute
 	BT(R7,checkBottom)
 	SUB(R6,R3,R7) |; curr_cell - nb_cols
 	PUSH(R7)	
 	ADDC(R9,4,R9) |;n_valid_neighbours++
 checkBottom:
-	|;check bottom neighbour
+	|check bottom neighbour
 	SUBC(R2,1,R7) |; nb_rows - 1
 	CMPLT(R8,R7,R7) |; row < nb_rows -1 (R7)
 	BF(R7,while_loop)
@@ -114,13 +114,9 @@ checkBottom:
 
 
 
-
-	
-
-
-
+	|;PUSH(R6) | We push the curr_cell so we can restart there when when the recursive call ends
+	.breakpoint
 while_loop:
-	
 	CMPLTC(R9,0,R7) |; n_valid_neighbours <= 0? Si vrai, on sort
 	BT(R7,perfect_maze_end)
 	|; randomly select one neighbour
@@ -147,6 +143,8 @@ while_loop:
 	LD(R11,0,R10) |; on sauvegarde la valeur de la fin du tableau
 	ST(R19,0,R11) |; on va y placer la valeur du neighbour au hasard
 	ST(R10,0,R7) 
+
+	| On check si la cellule a déjà été visitée
 	SUBC(R9,4,R9) |; n_valid_neigbours--
 	MODC(R19,32,R7) |; neighbour % 32
 	DIVC(R19,32,R8) |; neighbour/32 
@@ -156,8 +154,7 @@ while_loop:
 	SHR(R8,R7,R8) |; Shift bitmap vers la droite de (neighbour % 32)
 	ANDC(R8,1,R8) |; visited_bit = R8
 	.breakpoint
-
-	CMPEQC(R8,1,R7)
+	CMPEQC(R8,1,R7) |; if it is 1 (already visited)
 	BT(R7,while_loop)
 
 
@@ -171,7 +168,6 @@ while_loop:
 	PUSH(R1) |; push maze
 
 	CALL(connect__)	
-
 	DEALLOCATE(5)
 	PUSH(R19) |; neighbour becomes new curr_cell
 	PUSH(R4) |; visited
@@ -180,8 +176,10 @@ while_loop:
 	PUSH(R1) |;maze
 
 	CALL(perfect_maze)
-
-	DEALLOCATE(9) |; 4 neighbour + 5 registers
+	.breakpoint
+	DEALLOCATE(5) |;  5 registers
+	 |; l'appel récursif s'est arrêté, on reprend un autre neighbour de curr_cell
+	BR(while_loop)
 
 perfect_maze_end:
 	POP(R6)
@@ -190,7 +188,7 @@ perfect_maze_end:
 	POP(R2)
 	POP(R1)	
 	END()
-
+|; END OF WHILE
 
 
 connect__:

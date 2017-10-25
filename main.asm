@@ -75,7 +75,8 @@ main__:
 	CALL(abs__)
 	DEALLOCATE(1)
 	MUL(R2, R3, R5)
-	MOD(R0, R5, R6)
+	CMOVE(81,R6)
+	|;MOD(R0, R5, R6)
 
 	|; create the perfect maze
 	PUSH(R6)
