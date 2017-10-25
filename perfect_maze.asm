@@ -114,7 +114,7 @@ checkBottom:
 
 
 
-	|;PUSH(R6) | We push the curr_cell so we can restart there when when the recursive call ends
+	PUSH(R6) | We push the curr_cell so we can restart there when when the recursive call ends
 	.breakpoint
 while_loop:
 	CMPLTC(R9,0,R7) |; n_valid_neighbours <= 0? Si vrai, on sort
@@ -179,6 +179,7 @@ while_loop:
 	.breakpoint
 	DEALLOCATE(5) |;  5 registers
 	 |; l'appel récursif s'est arrêté, on reprend un autre neighbour de curr_cell
+ 	POP(R6)
 	BR(while_loop)
 
 perfect_maze_end:
