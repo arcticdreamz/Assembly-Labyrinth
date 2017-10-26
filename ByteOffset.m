@@ -1,5 +1,5 @@
-source = 94 %R19 ou R16, le plus petit est source
-dest =  126
+source = 49 %R19 ou R16, le plus petit est source
+dest =  81
 nb_cols = 32;
 WORDS_PER_ROW = 64 ;
 CELLS_PER_WORD = 4;

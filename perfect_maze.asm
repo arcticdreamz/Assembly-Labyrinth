@@ -85,10 +85,8 @@ perfect_maze:
 	ADD(R8,R4,R8)	|;visited (R4) + offset (R8) --> R8
 	LD(R8,0,R9)		|;visited[curr_cell /32] --> R9
 	OR(R9,R7,R7)	|;put 1 in the curr_cell if not visited yet (OR)
-	.breakpoint
-	|;ST(R7,0,R8)	|;put the updated visited back
-	ST(R7,0,R9)		|;put the updated visited back
-
+	ST(R7,0,R8)	|;put the updated visited back
+	
 	COL_FROM_INDEX(R6,R3,R8)	|; col --> R8
 	CMOVE(0,R9) 				|; n_valid_neighbours = 0
 
@@ -229,14 +227,20 @@ perfect_maze_end:
 
 |;****************************CONNECT FUNCTION***********************************
 connect__:
-
 	INIT()	
-	
-	PUSH(R6) 	|;push curr_cell for connect
-	PUSH(R4) 	|;push visited
-	PUSH(R19) 	|;push neigbour
+	PUSH(R1) 	|;push maze	
 	PUSH(R3) 	|;push nb_cols	
-	PUSH(R1) 	|;push maze
+	PUSH(R4) 	|;push visited
+	PUSH(R6) 	|;push curr_cell for connect
+	PUSH(R7)
+	PUSH(R8)
+	PUSH(R11)
+	PUSH(R12)
+	PUSH(R13)
+	PUSH(R14)
+	PUSH(R15)
+	PUSH(R19) 	|;push neigbour
+	PUSH(R25)
 	
 	LD(BP,-12,R1) 	|;maze --> R1
 	LD(BP,-16,R3) 	|;nb_cols --> R3
@@ -260,8 +264,8 @@ byte_offset:
 
 vertical__:
 	SUB(R19,R6,R7) 		|;dest-source --> R7
-	CMPLEC(R7, 1, R7) 	|;if dest-source <= 1 --> R7 = 1 (jump to horizontal)
-	BT(R7,horizontal__) 
+	CMPLEC(R7, 1, R7) 	|;if dest-source <= 1 --> R7 = 1 
+	BF(R7,horizontal__)  |; if R7 = 0, jump to horizontal
 	
 	CMPEQC(R12,0,R7) 	|;byte offset == 0 ?
 	BF(R7,openV1)
@@ -347,11 +351,21 @@ horizontal_loop__:
 	BR(horizontal_loop__)
 
 connect_end__:
-	POP(R1) 	|;POP maze
-	POP(R3) 	|;POP nb_cols	
-	POP(R19) 	|;POP neigbour
-	POP(R4) 	|;POP visited
-	POP(R6) 	|;POP curr_cell for connect
+	
+
+	POP(R25)
+	POP(R19) 	|;push neigbour
+	POP(R15)
+	POP(R14)
+	POP(R13)
+	POP(R12)
+	POP(R11)
+	POP(R8)
+	POP(R7)
+	POP(R6) 	|;push curr_cell for connect
+	POP(R4) 	|;push visited
+	POP(R3) 	|;push nb_cols	
+	POP(R1) 	|;push maze	
 	END()		|;end of connect
 
 |;**********************************************************************************
