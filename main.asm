@@ -86,6 +86,7 @@ main__:
 	PUSH(R1)
 	CALL(perfect_maze)
 	DEALLOCATE(5)
+	ADD(R31,R31,R31)
 	HALT()
 
 .include perfect_maze.asm

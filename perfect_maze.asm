@@ -51,7 +51,6 @@ OPEN_H_3:
 
 |;*****************************PERFECT_MAZE FONCTION****************************
 perfect_maze:
-
 	INIT()
 
 	|;Save in the stack the value of the registers we'll use in the function
@@ -142,33 +141,29 @@ while_loop:
 	PUSH(R0)
 	CALL(abs__)
 	DEALLOCATE(1)
+
 	DIVC(R9,4,R7) |;n_valid_neighbours/4 --> R7 (to get the index between [0..3])
 	MOD(R0,R7,R8) |;random_neigh_index = (random % n_valid_neighbours/4) --> R8
-
-
-	ADDC(BP,4*13,R20) |;Beginning of our array "neighbours" in the stack (put it in R20)
-					  |;We already pushed 13 local variables on the stack
-					  |;So we add 13*4 to BP to get the correct place in the stack
-	
 	MULC(R8,4,R7) 	|;random_neigh_index*4 --> R7 (to get the offset)
-	ADD(R20,R7,R7) 	|;neighbours+4*random_neigh_index --> R7
+
+	ADDC(R7,4,R7) |; need to add one offset from SP
+	SUB(SP,R7,R7) 
+
 	LD(R7,0,R19)  	|;neighbour = neighbours[random_neigh_index] --> R19
 	
-
+	POP(R11)
+	ST(R11,0,R7)
 	|;Put the taken neighbour at the end of neighbours array
-	SUBC(R9,4,R11) 	|;n_valid_neighbours-1 --> R11 (index of the last element of neighbours)
-	ADD(R20,R11,R11)|;neighbours + n_valid_neighbours-1 --> R11
-	LD(R11,0,R10) 	|;neighbours[n_valid_neighbours-1] --> R10
+	|;SUBC(R9,4,R11) 	|;n_valid_neighbours-1 --> R11 (index of the last element of neighbours)
+	|;ADD(R20,R11,R11)|;neighbours + n_valid_neighbours-1 --> R11
+	|;LD(R11,0,R10) 	|;neighbours[n_valid_neighbours-1] --> R10
 
-	ST(R10,0,R7)	|;swap neighbours[n_valid_neighbours-1] and neighbours[random_neigh_index] 
-	ST(R19,0,R11) 	|; 
+	|;ST(R10,0,R7)	|;swap neighbours[n_valid_neighbours-1] and neighbours[random_neigh_index] 
+	|;ST(R19,0,R11) 	|; 
 	
 	SUBC(R9,4,R9) 	|;n_valid_neigbours--
 
 	
-
-	PUSH(R20) 		|;push the adress of the array neighbours
-	PUSH(R9) 		|;push n_valid_neighbours
 
 	|;Check if the neighbour is already visited
 	MODC(R19,32,R7) |;neighbour % 32
@@ -184,16 +179,14 @@ while_loop:
 
 	|;RECURSIVITE
 	PUSH(R6) 	|;push curr_cell for connect
-	PUSH(R4) 	|;push visited
 	PUSH(R19) 	|;push neigbour (!= neighbours)
 	PUSH(R3)	|;push nb_cols	
 	PUSH(R1) 	|;push maze
 
 	CALL(connect__)	
-	DEALLOCATE(5)
+	DEALLOCATE(4)
 
-	POP(R9)
-	POP(R20)
+
 
 	PUSH(R19) 	|;neighbour becomes new curr_cell
 	PUSH(R4) 	|;push visited
@@ -203,6 +196,7 @@ while_loop:
 
 	CALL(perfect_maze)
 	DEALLOCATE(5) |;  5 registers
+
 	 |; l'appel récursif s'est arrêté, on reprend un autre neighbour de curr_cell
 	BR(while_loop)
 
@@ -245,8 +239,7 @@ connect__:
 	LD(BP,-12,R1) 	|;maze --> R1
 	LD(BP,-16,R3) 	|;nb_cols --> R3
 	LD(BP,-20,R19)	|;neighbour --> R19
-	LD(BP,-24,R4) 	|;visited --> R4
-	LD(BP,-28,R6) 	|;curr_cell --> R6
+	LD(BP,-24,R6) 	|;curr_cell --> R6
 	
 	CMPLT(R6,R19,R7) 	|;make sure source < dest (neighbour)
 	BT(R7,byte_offset) 	|;if it is true, we jump the swap macro
